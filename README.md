@@ -6,6 +6,8 @@ A production-ready AI research agent built with **Rust** and the **Rig framework
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
 ![AI](https://img.shields.io/badge/AI-Ollama-green.svg)
 
+Repository: https://github.com/aarambh-darshan/ai-research-agent
+
 ## ✨ Features
 
 - 🤖 **Local LLM Support** - Uses Ollama for privacy-friendly, free AI inference
@@ -44,7 +46,7 @@ A production-ready AI research agent built with **Rust** and the **Rig framework
 
 ```bash
 # Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/aarambh-darshan/ai-research-agent.git
 cd ai-research-agent
 
 # Copy environment template
