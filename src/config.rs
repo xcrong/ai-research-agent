@@ -1,121 +1,121 @@
-//! # Configuration Module
+//! # 配置模块
 //!
-//! This module handles loading and managing configuration from environment variables.
-//! It demonstrates several important Rust patterns:
-//! - Structs with named fields
-//! - The Default trait for sensible defaults
-//! - Error handling with Result types
-//! - String ownership vs borrowing
+//! 本模块处理从环境变量加载和管理配置。
+//! 它演示了几个重要的 Rust 模式：
+//! - 具有命名字段的结构体
+//! - Default 特征用于合理默认值
+//! - 使用 Result 类型进行错误处理
+//! - 字符串所有权与借用
 
 use anyhow::{Context, Result};
 use std::env;
 
 // =============================================================================
-// CONFIGURATION STRUCT
+// 配置结构体
 // =============================================================================
-/// Main configuration for the research agent.
+/// 研究代理的主要配置。
 ///
-/// # Rust Concept: Structs
-/// Structs are Rust's way of creating custom data types. They're similar to
-/// classes in other languages but without inheritance. Each field has a name
-/// and type.
+/// # Rust 概念：结构体
+/// 结构体是 Rust 创建自定义数据类型的方式。它们类似于
+/// 其他语言中的类，但没有继承。每个字段都有名称
+/// 和类型。
 ///
-/// # Rust Concept: Derive Macros
-/// The #[derive(...)] attribute automatically implements common traits:
-/// - Debug: Allows printing with {:?} format
-/// - Clone: Creates a deep copy of the struct
+/// # Rust 概念：派生宏
+/// #[derive(...)] 属性自动实现常见特征：
+/// - Debug：允许使用 {:?} 格式打印
+/// - Clone：创建结构体的深拷贝
 #[derive(Debug, Clone)]
 pub struct Config {
-    /// The Ollama model to use (e.g., "llama3.2", "deepseek-v3.2")
+    /// 要使用的 Ollama 模型（例如 "llama3.2"、"deepseek-v3.2"）
     pub model: String,
 
-    /// Ollama server URL (default: http://localhost:11434)
+    /// Ollama 服务器 URL（默认值：http://localhost:11434）
     pub ollama_host: String,
 
-    /// Temperature for LLM responses (0.0 = deterministic, 1.0 = creative)
-    /// Lower values produce more focused, factual responses
+    /// LLM 响应的温度（0.0 = 确定，1.0 = 创造性）
+    /// 较低的值会产生更专注、事实性的响应
     pub temperature: f32,
 
-    /// Maximum number of search results to analyze
+    /// 要分析的最大搜索结果数
     pub max_search_results: usize,
 
-    /// Log level for the application
+    /// 应用程序的日志级别
     pub log_level: String,
 }
 
 // =============================================================================
-// DEFAULT IMPLEMENTATION
+// 默认实现
 // =============================================================================
-/// # Rust Concept: The Default Trait
+/// # Rust 概念：Default 特征
 ///
-/// The Default trait provides a way to create a "default" value for a type.
-/// This is useful when you want sensible defaults that can be overridden.
+/// Default 特征为类型提供创建"默认值"的方法。
+/// 当您想要可以覆盖的合理默认值时，这很有用。
 ///
-/// We implement it manually here to show the pattern, but you can also
-/// derive it with #[derive(Default)] for simple cases.
+/// 我们在这里手动实现它以展示模式，但对于简单的情况，
+/// 您也可以使用 #[derive(Default)] 来派生它。
 impl Default for Config {
     fn default() -> Self {
         Self {
-            // Use a common, capable model as default
+            // 使用常见、强大的模型作为默认值
             model: "llama3.2".to_string(),
 
-            // Standard Ollama default port
+            // 标准 Ollama 默认端口
             ollama_host: "http://localhost:11434".to_string(),
 
-            // Moderate temperature - balanced between creativity and focus
+            // 中等温度 - 在创造性和专注之间取得平衡
             temperature: 0.7,
 
-            // Analyze top 5 search results by default
+            // 默认分析前 5 个搜索结果
             max_search_results: 5,
 
-            // Info level logging by default
+            // 默认使用 info 级别日志
             log_level: "info".to_string(),
         }
     }
 }
 
 // =============================================================================
-// CONFIGURATION LOADING
+// 配置加载
 // =============================================================================
 impl Config {
-    /// Load configuration from environment variables.
+    /// 从环境变量加载配置。
     ///
-    /// # Rust Concept: Result Type
+    /// # Rust 概念：Result 类型
     ///
-    /// Result<T, E> is Rust's way of handling operations that can fail.
-    /// - Ok(value) indicates success with a value
-    /// - Err(error) indicates failure with an error
+    /// Result<T, E> 是 Rust 处理可能失败的操作的方式。
+    /// - Ok(value) 表示成功并带有一个值
+    /// - Err(error) 表示失败并带有一个错误
     ///
-    /// We use `anyhow::Result<T>` which is shorthand for `Result<T, anyhow::Error>`.
-    /// anyhow::Error can hold any error type, making it great for applications.
+    /// 我们使用 `anyhow::Result<T>`，它是 `Result<T, anyhow::Error>` 的简写。
+    /// anyhow::Error 可以保存任何错误类型，使其非常适合应用程序。
     ///
-    /// # Rust Concept: The ? Operator
+    /// # Rust 概念：? 操作符
     ///
-    /// The `?` operator is syntactic sugar for error propagation.
-    /// If the Result is Ok, it unwraps the value.
-    /// If the Result is Err, it returns early from the function with that error.
+    /// `?` 操作符是错误传播的语法糖。
+    /// 如果 Result 是 Ok，它会解包值。
+    /// 如果 Result 是 Err，它会提前从函数返回该错误。
     ///
-    /// # Example
+    /// # 示例
     /// ```
     /// let config = Config::from_env()?;
     /// println!("Using model: {}", config.model);
     /// ```
     pub fn from_env() -> Result<Self> {
-        // Load .env file if it exists (silently ignore if not found)
-        // This is useful for local development
+        // 如果存在则加载 .env 文件（静默忽略如果未找到）
+        // 这对于本地开发很有用
         let _ = dotenvy::dotenv();
 
-        // Start with default values
+        // 从默认值开始
         let mut config = Config::default();
 
-        // Override with environment variables if set
+        // 如果设置了环境变量则覆盖
         //
-        // # Rust Concept: if let
-        // `if let` is a concise way to handle a single pattern match.
-        // It's equivalent to:
+        // # Rust 概念：if let
+        // `if let` 是处理单个模式匹配的简洁方式。
+        // 它等价于：
         //   match env::var("OLLAMA_MODEL") {
         //       Ok(val) => { config.model = val; }
-        //       Err(_) => { /* do nothing */ }
+        //       Err(_) => { /* 什么都不做 */ }
         //   }
         if let Ok(val) = env::var("OLLAMA_MODEL") {
             config.model = val;
@@ -125,18 +125,18 @@ impl Config {
             config.ollama_host = val;
         }
 
-        // Parse temperature from string to f32
-        // .context() adds helpful error messages when things fail
+        // 将温度从字符串解析为 f32
+        // .context() 在失败时添加有用的错误消息
         if let Ok(val) = env::var("TEMPERATURE") {
             config.temperature = val
                 .parse()
-                .context("TEMPERATURE must be a valid floating-point number (e.g., 0.7)")?;
+                .context("TEMPERATURE 必须是有效的浮点数（例如 0.7）")?;
         }
 
         if let Ok(val) = env::var("MAX_SEARCH_RESULTS") {
             config.max_search_results = val
                 .parse()
-                .context("MAX_SEARCH_RESULTS must be a valid positive integer")?;
+                .context("MAX_SEARCH_RESULTS 必须是有效的正整数")?;
         }
 
         if let Ok(val) = env::var("RUST_LOG") {
@@ -146,27 +146,24 @@ impl Config {
         Ok(config)
     }
 
-    /// Validate the configuration.
+    /// 验证配置。
     ///
-    /// This ensures all values are within acceptable ranges before the agent starts.
-    /// It's better to fail fast with a clear error than to fail later with a confusing one!
+    /// 这确保所有值在代理启动前都在可接受范围内。
+    /// 快速失败并给出清晰的错误比以后出现令人困惑的错误更好！
     pub fn validate(&self) -> Result<()> {
-        // Temperature must be between 0 and 2 (OpenAI/Ollama range)
+        // 温度必须在 0 到 2 之间（OpenAI/Ollama 范围）
         if !(0.0..=2.0).contains(&self.temperature) {
-            anyhow::bail!(
-                "Temperature must be between 0.0 and 2.0, got: {}",
-                self.temperature
-            );
+            anyhow::bail!("温度必须在 0.0 到 2.0 之间，得到：{}", self.temperature);
         }
 
-        // Must have at least 1 search result
+        // 必须至少有 1 个搜索结果
         if self.max_search_results == 0 {
-            anyhow::bail!("MAX_SEARCH_RESULTS must be at least 1");
+            anyhow::bail!("MAX_SEARCH_RESULTS 至少为 1");
         }
 
-        // Model name can't be empty
+        // 模型名称不能为空
         if self.model.is_empty() {
-            anyhow::bail!("OLLAMA_MODEL cannot be empty");
+            anyhow::bail!("OLLAMA_MODEL 不能为空");
         }
 
         Ok(())
@@ -174,15 +171,15 @@ impl Config {
 }
 
 // =============================================================================
-// UNIT TESTS
+// 单元测试
 // =============================================================================
-/// # Rust Concept: Unit Tests
+/// # Rust 概念：单元测试
 ///
-/// Tests in Rust are functions annotated with #[test].
-/// They're placed in a special module annotated with #[cfg(test)].
-/// The #[cfg(test)] means this code is only compiled during testing.
+/// Rust 中的测试是带有 #[test] 注释的函数。
+/// 它们放置在带有 #[cfg(test)] 注释的特殊模块中。
+/// #[cfg(test)] 意味着此代码仅在测试期间编译。
 ///
-/// Run tests with: cargo test
+/// 使用以下命令运行测试：cargo test
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -206,14 +203,14 @@ mod tests {
     #[test]
     fn test_config_validation_invalid_temperature() {
         let mut config = Config::default();
-        config.temperature = 3.0; // Invalid: above 2.0
+        config.temperature = 3.0; // 无效：超过 2.0
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn test_config_validation_invalid_search_results() {
         let mut config = Config::default();
-        config.max_search_results = 0; // Invalid: must be at least 1
+        config.max_search_results = 0; // 无效：至少为 1
         assert!(config.validate().is_err());
     }
 }

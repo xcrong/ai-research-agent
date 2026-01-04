@@ -1,11 +1,11 @@
-//! # Tools Module
+//! # 工具模块
 //!
-//! This module implements the web search tool using DuckDuckGo.
-//! It demonstrates several important Rust and async patterns:
-//! - Trait implementation (Rig's Tool trait)
-//! - Async/await for non-blocking I/O
-//! - Structured error handling with thiserror
-//! - Serde for JSON serialization/deserialization
+//! 本模块使用 DuckDuckGo 实现网络搜索工具。
+//! 它演示了几个重要的 Rust 和异步模式：
+//! - 特征实现（Rig 的 Tool 特征）
+//! - 异步/等待用于非阻塞 I/O
+//! - 使用 thiserror 进行结构化错误处理
+//! - Serde 用于 JSON 序列化/反序列化
 
 use rig::completion::ToolDefinition;
 use rig::tool::Tool;
@@ -15,88 +15,88 @@ use thiserror::Error;
 use tracing::{debug, info, warn};
 
 // =============================================================================
-// CUSTOM ERROR TYPE
+// 自定义错误类型
 // =============================================================================
-/// # Rust Concept: Custom Error Types with thiserror
+/// # Rust 概念：使用 thiserror 的自定义错误类型
 ///
-/// thiserror is a derive macro that makes creating custom error types easy.
-/// Each variant represents a different kind of error that can occur.
-/// The #[error("...")] attribute defines the error message.
+/// thiserror 是一个派生宏，使创建自定义错误类型变得容易。
+/// 每个变体代表可能发生的不同种类的错误。
+/// #[error("...")] 属性定义了错误消息。
 ///
-/// This is better than using strings because:
-/// 1. The compiler checks we handle all error cases
-/// 2. We can match on specific error types
-/// 3. Errors are self-documenting
+/// 这比使用字符串更好，因为：
+/// 1. 编译器检查我们是否处理了所有错误情况
+/// 2. 我们可以匹配特定的错误类型
+/// 3. 错误是自文档化的
 ///
-/// Note: For Rig's Tool trait, our error must implement std::error::Error,
-/// which thiserror provides automatically via the derive macro.
+/// 注意：对于 Rig 的 Tool 特征，我们的错误必须实现 std::error::Error，
+/// thiserror 通过派生宏自动提供这个。
 #[derive(Error, Debug)]
 pub enum SearchError {
-    #[error("Failed to perform web search: {0}")]
+    #[error("执行网络搜索失败: {0}")]
     SearchFailed(String),
 
-    #[error("Rate limited by search provider, please wait")]
+    #[error("被搜索提供商限速，请等待")]
     RateLimited,
 
-    #[allow(dead_code)] // May be used in future enhancements
-    #[error("No search results found for query: {0}")]
+    #[allow(dead_code)] // 可能在未来的增强中使用
+    #[error("未找到查询结果: {0}")]
     NoResults(String),
 
-    #[error("Network error: {0}")]
+    #[error("网络错误: {0}")]
     NetworkError(#[from] reqwest::Error),
 }
 
 // =============================================================================
-// SEARCH RESULT STRUCT
+// 搜索结果结构体
 // =============================================================================
-/// Represents a single search result from the web.
+/// 表示来自网络的一个搜索结果。
 ///
-/// # Rust Concept: Derive Macros for Serialization
+/// # Rust 概念：序列化的派生宏
 ///
-/// - Serialize: Convert struct to JSON (or other formats)
-/// - Deserialize: Parse JSON into struct
-/// - Clone: Create deep copies
-/// - Debug: Pretty-print with {:?}
+/// - Serialize：将结构体转换为 JSON（或其他格式）
+/// - Deserialize：将 JSON 解析为结构体
+/// - Clone：创建深拷贝
+/// - Debug：使用 {:?} 漂亮地打印
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SearchResult {
-    /// The title of the search result
+    /// 搜索结果的标题
     pub title: String,
 
-    /// The URL of the result
+    /// 结果的 URL
     pub url: String,
 
-    /// A snippet/description of the content
+    /// 内容的片段/描述
     pub snippet: String,
 }
 
 // =============================================================================
-// WEB SEARCH TOOL
+// 网络搜索工具
 // =============================================================================
-/// The web search tool that uses DuckDuckGo for free searches.
+/// 使用 DuckDuckGo 进行免费搜索的网络搜索工具。
 ///
-/// # Rust Concept: Struct with Private Fields
+/// # Rust 概念：带私有字段的结构体
 ///
-/// By not making fields `pub`, we encapsulate the implementation.
-/// Users can only create this through `new()` and use the public methods.
+/// 通过不将字段设为 `pub`，我们封装了实现。
+/// 用户只能通过 `new()` 创建这个，并使用公共方法。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WebSearchTool {
-    /// Maximum results to return per search
+    /// 每次搜索返回的最大结果数
     max_results: usize,
 }
 
 impl WebSearchTool {
-    /// Create a new WebSearchTool with the specified max results.
+    /// 使用指定的最大结果数创建新的 WebSearchTool。
     ///
-    /// # Rust Concept: Associated Functions (Constructors)
+    /// # Rust 概念：关联函数（构造函数）
     ///
-    /// Functions that don't take `self` are called "associated functions".
-    /// `new()` is a convention for constructor-like functions.
-    /// They're called with `Type::new()` syntax.
+    /// 不带 `self` 的函数称为"关联函数"。
+    /// `new()` 是类似构造函数函数的约定。
+    /// 它们使用 `Type::new()` 语法调用。
     ///
-    /// # Arguments
-    /// * `max_results` - Maximum number of search results to return
+    /// # 参数
+    /// * `max_results` - 返回的最大搜索结果数
     ///
-    /// # Example
+    /// # 示例
     /// ```
     /// let search_tool = WebSearchTool::new(5);
     /// ```
@@ -104,20 +104,20 @@ impl WebSearchTool {
         Self { max_results }
     }
 
-    /// Perform a web search using DuckDuckGo.
+    /// 使用 DuckDuckGo 执行网络搜索。
     ///
-    /// # Rust Concept: Async Functions
+    /// # Rust 概念：异步函数
     ///
-    /// `async fn` defines a function that can be paused and resumed.
-    /// Inside async functions, you use `.await` to wait for async operations.
-    /// This allows efficient handling of I/O without blocking threads.
+    /// `async fn` 定义可以暂停和恢复的函数。
+    /// 在异步函数内部，您使用 `.await` 等待异步操作。
+    /// 这允许高效处理 I/O 而不阻塞线程。
     pub async fn search(&self, query: &str) -> Result<Vec<SearchResult>, SearchError> {
         info!(query = %query, "Performing web search");
 
-        // Rate limiting: wait a bit before making the request
+        // 限速：在发出请求之前等待一下
         tokio::time::sleep(Duration::from_millis(500)).await;
 
-        // Use DuckDuckGo HTML search
+        // 使用 DuckDuckGo HTML 搜索
         let results = self.search_duckduckgo(query).await?;
 
         if results.is_empty() {
@@ -129,10 +129,10 @@ impl WebSearchTool {
         Ok(results)
     }
 
-    /// Internal method to perform DuckDuckGo search via HTML scraping.
+    /// 通过 HTML 抓取执行 DuckDuckGo 搜索的内部方法。
     ///
-    /// Note: We use HTML scraping because DuckDuckGo doesn't have a free web search API.
-    /// The duckduckgo_search crate's library API returns empty results.
+    /// 注意：我们使用 HTML 抓取，因为 DuckDuckGo 没有免费的网络搜索 API。
+    /// duckduckgo_search 库的 API 返回空结果。
     async fn search_duckduckgo(&self, query: &str) -> Result<Vec<SearchResult>, SearchError> {
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(30))
@@ -164,19 +164,19 @@ impl WebSearchTool {
         Ok(results.into_iter().take(self.max_results).collect())
     }
 
-    /// Parse DuckDuckGo HTML to extract results.
-    /// Uses multiple strategies to handle different HTML formats.
+    /// 解析 DuckDuckGo HTML 以提取结果。
+    /// 使用多种策略来处理不同的 HTML 格式。
     fn parse_html(&self, html: &str) -> Vec<SearchResult> {
         let mut results = Vec::new();
         let mut seen_urls = std::collections::HashSet::new();
 
-        // Strategy 1: Look for result links with the uddg parameter (redirect URLs)
+        // 策略 1：查找带有 uddg 参数的结果链接（重定向 URL）
         for segment in html.split("uddg=") {
             if results.len() >= self.max_results {
                 break;
             }
 
-            // Find the end of the encoded URL
+            // 找到编码 URL 的结尾
             if let Some(end) = segment.find(|c| c == '&' || c == '"' || c == '\'') {
                 let encoded_url = &segment[..end];
                 if let Ok(url) = urlencoding::decode(encoded_url) {
@@ -196,14 +196,14 @@ impl WebSearchTool {
             }
         }
 
-        // Strategy 2: Look for result__url class which contains visible URLs
+        // 策略 2：查找包含可见 URL 的 result__url 类
         if results.len() < self.max_results {
             for segment in html.split("result__url") {
                 if results.len() >= self.max_results {
                     break;
                 }
 
-                // Look for href after this marker
+                // 在这个标记后查找 href
                 if let Some(href_start) = segment.find("href=\"") {
                     let after_href = &segment[href_start + 6..];
                     if let Some(href_end) = after_href.find('"') {
@@ -229,7 +229,7 @@ impl WebSearchTool {
             }
         }
 
-        // Strategy 3: Direct URL extraction - find any https:// URLs
+        // 策略 3：直接 URL 提取 - 查找任何 https:// URL
         if results.len() < self.max_results {
             for segment in html.split("https://") {
                 if results.len() >= self.max_results {
@@ -240,7 +240,7 @@ impl WebSearchTool {
                     c == '"' || c == '\'' || c == '<' || c == '>' || c == ' ' || c == ')'
                 }) {
                     let domain_path = &segment[..end];
-                    // Filter out internal/tracking URLs
+                    // 过滤内部/跟踪 URL
                     if !domain_path.starts_with("duckduckgo")
                         && !domain_path.starts_with("improving.duckduckgo")
                         && !domain_path.contains("cdn.")
@@ -265,12 +265,12 @@ impl WebSearchTool {
             }
         }
 
-        // Deduplicate and return
+        // 去重并返回
         results.into_iter().take(self.max_results).collect()
     }
 }
 
-/// Extract the domain name from a URL.
+/// 从 URL 中提取域名。
 fn extract_domain(url: &str) -> Option<String> {
     url.split("//")
         .nth(1)?
@@ -280,28 +280,28 @@ fn extract_domain(url: &str) -> Option<String> {
 }
 
 // =============================================================================
-// RIG TOOL TRAIT IMPLEMENTATION
+// Rig 特征实现
 // =============================================================================
-/// Input arguments for the search tool.
+/// 搜索工具的输入参数。
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SearchArgs {
-    /// The search query to execute
+    /// 要执行的搜索查询
     pub query: String,
 }
 
-/// Implement the Tool trait for WebSearchTool.
-/// This makes it compatible with Rig's agent system.
+/// 为 WebSearchTool 实现 Tool 特征。
+/// 这使其与 Rig 的代理系统兼容。
 ///
-/// # Rust Concept: Implementing Traits
+/// # Rust 概念：实现特征
 ///
-/// Traits are like interfaces in other languages - they define behavior.
-/// For Rig 0.27, the Tool trait requires:
-/// - NAME: A static string identifier
-/// - Error: Must implement std::error::Error
-/// - Args: Input type that deserializes from JSON
-/// - Output: Return type that serializes to JSON
-/// - definition(): Async method returning tool metadata
-/// - call(): Async method that executes the tool
+/// 特征就像其他语言中的接口 - 它们定义行为。
+/// 对于 Rig 0.27，Tool 特征需要：
+/// - NAME：静态字符串标识符
+/// - Error：必须实现 std::error::Error
+/// - Args：从 JSON 反序列化的输入类型
+/// - Output：序列化为 JSON 的返回类型
+/// - definition()：返回工具元数据的异步方法
+/// - call()：执行工具的异步方法
 impl Tool for WebSearchTool {
     const NAME: &'static str = "web_search";
 
@@ -309,17 +309,17 @@ impl Tool for WebSearchTool {
     type Output = String;
     type Error = SearchError;
 
-    /// Returns the tool definition that describes this tool to the LLM.
+    /// 返回描述此工具给 LLM 的工具定义。
     async fn definition(&self, _prompt: String) -> ToolDefinition {
         ToolDefinition {
             name: Self::NAME.to_string(),
-            description: "Search the web using DuckDuckGo. Use this to find current information about any topic.".to_string(),
+            description: "使用 DuckDuckGo 搜索网络。使用此工具查找关于任何主题的当前信息。".to_string(),
             parameters: serde_json::json!({
                 "type": "object",
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "The search query to find information about"
+                        "description": "用于查找信息的搜索查询"
                     }
                 },
                 "required": ["query"]
@@ -327,14 +327,14 @@ impl Tool for WebSearchTool {
         }
     }
 
-    /// Execute the search tool.
+    /// 执行搜索工具。
     ///
-    /// Note: In Rig 0.27, call() only takes &self and args (no state parameter).
+    /// 注意：在 Rig 0.27 中，call() 只接受 &self 和 args（没有状态参数）。
     async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
         let results = self.search(&args.query).await?;
 
         if results.is_empty() {
-            return Ok(format!("No results found for: {}", args.query));
+            return Ok(format!("未找到结果: {}", args.query));
         }
 
         let formatted: String = results
@@ -353,14 +353,14 @@ impl Tool for WebSearchTool {
             .join("\n");
 
         Ok(format!(
-            "## Search Results for: {}\n\n{}",
+            "## 搜索结果: {}\n\n{}",
             args.query, formatted
         ))
     }
 }
 
 // =============================================================================
-// UNIT TESTS
+// 单元测试
 // =============================================================================
 #[cfg(test)]
 mod tests {

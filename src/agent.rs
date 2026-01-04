@@ -1,11 +1,11 @@
-//! # Agent Module
+//! # 代理模块
 //!
-//! This module implements the research agent using the Rig framework.
-//! It demonstrates:
-//! - Rig's agent builder pattern
-//! - Tool integration for agentic workflows
-//! - Async programming with tokio
-//! - The Agent pattern in AI applications
+//! 本模块使用 Rig 框架实现研究代理。
+//! 它演示了：
+//! - Rig 的代理构建器模式
+//! - 代理工作流的工具集成
+//! - 使用 tokio 的异步编程
+//! - AI 应用中的代理模式
 
 use anyhow::Result;
 use rig::client::{CompletionClient, ProviderClient};
@@ -17,51 +17,51 @@ use crate::config::Config;
 use crate::tools::WebSearchTool;
 
 // =============================================================================
-// SYSTEM PROMPT
+// 系统提示
 // =============================================================================
-/// The system prompt defines the agent's personality and behavior.
+/// 系统提示定义了代理的人格和行为。
 const RESEARCH_SYSTEM_PROMPT: &str = r#"
-You are a helpful AI research assistant. Your task is to research topics and provide summaries.
+你是一个有用的 AI 研究助手。你的任务是研究主题并提供摘要。
 
-IMPORTANT INSTRUCTIONS:
-1. Use the web_search tool ONCE to find relevant information
-2. After getting search results, IMMEDIATELY synthesize them into a summary
-3. DO NOT make multiple search requests - one search is sufficient
-4. If the first search returns no results, try ONE simpler query, then summarize
+重要说明：
+1. 使用 web_search 工具一次以查找相关信息
+2. 获取搜索结果后，立即将其合成摘要
+3. 不要进行多次搜索请求 - 一次搜索就足够了
+4. 如果第一次搜索没有结果，尝试一个更简单的查询，然后总结
 
-When responding after a search:
-- **Overview**: Brief introduction to the topic
-- **Key Sources Found**: List the URLs from the search
-- **Summary**: Synthesize what these sources likely cover based on their titles/domains
-- **Next Steps**: Suggest what the user might explore
+收到搜索结果后的回复格式：
+- **概述**：简要介绍主题
+- **找到的关键来源**：列出搜索中的 URL
+- **摘要**：综合这些来源可能涵盖的内容，基于它们的标题/域名
+- **下一步**：建议用户可能探索的内容
 
-Always provide a response after seeing search results. Never keep searching indefinitely.
+收到搜索结果后始终提供回复。不要无限期地继续搜索。
 "#;
 
 // =============================================================================
-// RESEARCH AGENT STRUCT
+// 研究代理结构体
 // =============================================================================
-/// The main research agent that orchestrates LLM + tools.
+/// 协调 LLM 和工具的主要研究代理。
 ///
-/// # Rust Concept: Struct with References
+/// # Rust 概念：带引用的结构体
 ///
-/// We store a Config by value (owned). This means ResearchAgent owns
-/// its configuration and will clean it up when dropped.
+/// 我们按值（拥有）存储 Config。这意味着 ResearchAgent 拥有
+/// 其配置，并在释放时清理它。
 pub struct ResearchAgent {
-    /// Configuration for the agent
+    /// 代理的配置
     config: Config,
 
-    /// The web search tool
+    /// 网络搜索工具
     search_tool: WebSearchTool,
 }
 
 impl ResearchAgent {
-    /// Create a new ResearchAgent with the given configuration.
+    /// 使用给定配置创建新的 ResearchAgent。
     ///
-    /// # Rust Concept: Constructor Pattern
+    /// # Rust 概念：构造函数模式
     ///
-    /// Rust doesn't have constructors like OOP languages.
-    /// Instead, we use associated functions (usually named `new`).
+    /// Rust 没有像 OOP 语言那样的构造函数。
+    /// 相反，我们使用关联函数（通常命名为 `new`）。
     pub fn new(config: Config) -> Self {
         let search_tool = WebSearchTool::new(config.max_search_results);
 
@@ -71,22 +71,22 @@ impl ResearchAgent {
         }
     }
 
-    /// Research a topic and return a comprehensive summary.
+    /// 研究一个主题并返回全面的摘要。
     ///
-    /// # Rust Concept: Ownership and Borrowing
+    /// # Rust 概念：所有权和借用
     ///
-    /// `&self` means we borrow the ResearchAgent immutably.
-    /// `&str` for the query borrows the string data without copying.
+    /// `&self` 表示我们不可变地借用 ResearchAgent。
+    /// `&str` 用于查询，借用字符串数据而不复制。
     pub async fn research(&self, query: &str) -> Result<String> {
         info!(query = %query, "Starting research task");
 
-        // Step 1: Create the Ollama client using the builder pattern
-        // In Rig 0.27, use ollama::Client::from_env() which reads OLLAMA_API_BASE_URL
-        // environment variable, or defaults to http://localhost:11434
+        // 步骤 1：使用构建器模式创建 Ollama 客户端
+        // 在 Rig 0.27 中，使用 ollama::Client::from_env()，它读取 OLLAMA_API_BASE_URL
+        // 环境变量，或默认为 http://localhost:11434
         //
-        // # Rust Concept: Environment Variable Configuration
-        // Instead of hardcoding values, we use environment variables.
-        // This is a 12-factor app best practice for configuration.
+        // # Rust 概念：环境变量配置
+        // 我们不硬编码值，而是使用环境变量。
+        // 这是 12-factor 应用的配置最佳实践。
         std::env::set_var("OLLAMA_API_BASE_URL", &self.config.ollama_host);
 
         let ollama_client = ollama::Client::from_env();
@@ -97,12 +97,12 @@ impl ResearchAgent {
             "Connected to Ollama"
         );
 
-        // Step 2: Build the agent with tools
+        // 步骤 2：使用工具构建代理
         //
-        // Rig's agent builder lets us:
-        // - Set the model
-        // - Add a system prompt (preamble)
-        // - Register tools the agent can use
+        // Rig 的代理构建器让我们可以：
+        // - 设置模型
+        // - 添加系统提示（前导语）
+        // - 注册代理可以使用的工具
         let agent = ollama_client
             .agent(&self.config.model)
             .preamble(RESEARCH_SYSTEM_PROMPT)
@@ -111,16 +111,16 @@ impl ResearchAgent {
 
         info!("Agent configured, executing research query");
 
-        // Step 3: Execute the research query
+        // 步骤 3：执行研究查询
         let enhanced_query = format!(
-            "Research the following topic thoroughly. Use the web_search tool to find \
-             current information, then provide a comprehensive summary with sources:\n\n{}",
+            "彻底研究以下主题。使用 web_search 工具查找 \
+             当前信息，然后提供包含来源的全面摘要：\n\n{}",
             query
         );
 
         let response = agent
             .prompt(&enhanced_query)
-            .multi_turn(5) // Allow up to 5 iterations of tool calls
+            .multi_turn(5) // 允许最多 5 次工具调用迭代
             .await
             .map_err(|e| anyhow::anyhow!("Agent execution failed: {}", e))?;
 
@@ -129,10 +129,9 @@ impl ResearchAgent {
         Ok(response)
     }
 
-    /// Perform a quick search without full agent reasoning.
+    /// 执行快速搜索，无需完整的代理推理。
     ///
-    /// This is useful when you just want search results without
-    /// the agent synthesizing them.
+    /// 当你只想要搜索结果而不需要代理合成时，这很有用。
     pub async fn quick_search(&self, query: &str) -> Result<String> {
         info!(query = %query, "Performing quick search");
 
@@ -146,7 +145,7 @@ impl ResearchAgent {
             return Ok(format!("No results found for: {}", query));
         }
 
-        // Format results nicely
+        // 格式化结果
         let formatted: String = results
             .iter()
             .enumerate()
@@ -167,7 +166,7 @@ impl ResearchAgent {
 }
 
 // =============================================================================
-// UNIT TESTS
+// 单元测试
 // =============================================================================
 #[cfg(test)]
 mod tests {

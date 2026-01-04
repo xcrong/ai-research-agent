@@ -2,92 +2,92 @@
 name = "ai-research-agent"
 version = "0.1.0"
 edition = "2021"
-description = "A production-ready AI research agent built with Rig framework"
+description = "使用 Rig 框架构建的生产级 AI 研究代理"
 authors = ["Your Name <your.email@example.com>"]
 license = "MIT"
 readme = "README.md"
 keywords = ["ai", "agent", "llm", "research", "rust"]
 categories = ["command-line-utilities", "science"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# 查看更多键及其定义：https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 # =============================================================================
-# RIG FRAMEWORK - Core AI agent functionality
+# RIG 框架 - 核心 AI 代理功能
 # =============================================================================
-# Rig is a Rust library for building LLM-powered applications.
-# We enable the 'ollama' feature to use local models via Ollama.
-# Learn more: https://docs.rs/rig-core
+# Rig 是一个用于构建 LLM 驱动的应用程序的 Rust 库。
+# 我们启用 'ollama' 功能以通过 Ollama 使用本地模型。
+# 了解更多：https://docs.rs/rig-core
 rig-core = { version = "0.27", features = ["derive"] }
 
 # =============================================================================
-# ASYNC RUNTIME - Tokio for async/await support
+# 异步运行时 - Tokio 用于 async/await 支持
 # =============================================================================
-# Tokio is the most popular async runtime in Rust.
-# 'full' enables all features including:
-# - rt-multi-thread: Multi-threaded runtime
-# - macros: The #[tokio::main] attribute macro
-# - time: Timers and delays (for rate limiting)
-# - sync: Synchronization primitives
+# Tokio 是 Rust 中最流行的异步运行时。
+# 'full' 启用所有功能，包括：
+# - rt-multi-thread：多线程运行时
+# - macros：#[tokio::main] 属性宏
+# - time：定时器和延迟（用于限速）
+# - sync：同步原语
 tokio = { version = "1", features = ["full"] }
 
 # =============================================================================
-# SERIALIZATION - JSON handling for API responses
+# 序列化 - API 响应的 JSON 处理
 # =============================================================================
-# Serde is Rust's de-facto serialization framework.
-# 'derive' feature enables #[derive(Serialize, Deserialize)] macros.
+# Serde 是 Rust 的事实标准序列化框架。
+# 'derive' 功能启用 #[derive(Serialize, Deserialize)] 宏。
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 # =============================================================================
-# HTTP CLIENT - For web search API calls
+# HTTP 客户端 - 用于网络搜索 API 调用
 # =============================================================================
-# Reqwest is a high-level HTTP client built on hyper.
-# 'json' feature adds convenient .json() methods for requests/responses.
+# Reqwest 是构建在 hyper 之上的高级 HTTP 客户端。
+# 'json' 功能为请求/响应添加了方便的 .json() 方法。
 reqwest = { version = "0.12", features = ["json"] }
 
 # =============================================================================
-# WEB SEARCH - DuckDuckGo integration (FREE!)
+# 网络搜索 - DuckDuckGo 集成（免费！）
 # =============================================================================
-# Using duckduckgo_search for free web searches without API keys.
+# 使用 duckduckgo_search 进行免费网络搜索，无需 API 密钥。
 duckduckgo_search = "0.1"
 
 # =============================================================================
-# LOGGING - Structured logging with tracing
+# 日志记录 - 使用 tracing 进行结构化日志
 # =============================================================================
-# Tracing provides structured, async-aware logging.
-# Much better than println! for production applications.
+# Tracing 提供结构化的、异步感知的日志记录。
+# 比生产应用程序中的 println! 好得多。
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # =============================================================================
-# ERROR HANDLING - Ergonomic error management
+# 错误处理 - 人体工程学的错误管理
 # =============================================================================
-# anyhow: For application-level errors with context
-# thiserror: For library-level custom error types with derive macros
+# anyhow：用于带上下文的应用程序级错误
+# thiserror：用于带派生宏的库级自定义错误类型
 anyhow = "1"
 thiserror = "2"
 
 # =============================================================================
-# CLI - Command-line argument parsing
+# CLI - 命令行参数解析
 # =============================================================================
-# Clap with derive feature for declarative CLI definitions.
-# Much cleaner than manual argument parsing!
+# Clap 的派生功能用于声明式 CLI 定义。
+# 比手动解析参数干净得多！
 clap = { version = "4", features = ["derive", "env"] }
 
 # =============================================================================
-# CONFIGURATION - Environment variable management
+# 配置 - 环境变量管理
 # =============================================================================
-# dotenvy loads .env files into environment variables.
-# Great for local development without hardcoding secrets.
+# dotenvy 将 .env 文件加载到环境变量中。
+# 非常适合本地开发，无需硬编码密钥。
 dotenvy = "0.15"
 
 # =============================================================================
-# UTILITIES
+# 工具库
 # =============================================================================
-# async-trait: Required for async functions in traits (Rust limitation)
-# futures: Additional async utilities
-# urlencoding: URL encoding for search queries
+# async-trait：trait 中异步函数所必需的（Rust 限制）
+# futures：其他异步工具
+# urlencoding：搜索查询的 URL 编码
 async-trait = "0.1"
 futures = "0.3"
 urlencoding = "2.1"
